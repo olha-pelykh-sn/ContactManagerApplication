@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Data.Common;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 
@@ -12,9 +13,10 @@ namespace ContactManagerApplication.Data
         public ContactManagerDbContext(IConfiguration configuration)
         {
             _configuration = configuration;
-            _connectionString = _configuration.GetConnectionString("ContactManagerDbConnectionString");
+            _connectionString = configuration.GetConnectionString("ContactManagerDbConnectionString")
+                ?? throw new InvalidOperationException("Connection string 'ContactManagerDbConnectionString' is not configured.");
         }
 
-        public IDbConnection CreateConnection() => new SqlConnection(_connectionString);
+        public DbConnection CreateConnection() => new SqlConnection(_connectionString);
     }
 }

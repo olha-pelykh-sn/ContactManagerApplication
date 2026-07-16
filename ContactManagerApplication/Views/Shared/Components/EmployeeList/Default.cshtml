@@ -1,0 +1,380 @@
+@using ContactManagerApplication.Models.Domain
+@using ContactManagerApplication.Models
+@using ContactManagerApplication.Models.ViewModel
+@model EmployeeListViewModel
+@{
+    var currentSort     = Model.CurrentSort;
+    var currentSortDesc = Model.CurrentSortDesc;
+    var hasSort         = !string.IsNullOrEmpty(currentSort);
+    var searchQuery     = Model.SearchQuery;
+    var birthDayFrom    = Model.BirthDayFrom;
+    var birthDayTo      = Model.BirthDayTo;
+    var isMarriedFilter = Model.IsMarriedFilter;
+    var minSalary       = Model.MinSalary;
+    var maxSalary       = Model.MaxSalary;
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <h2>ALL EMPLOYEES</h2>
+        </div>
+        <div class="col-md-6 text-end d-flex gap-2 justify-content-end">
+            <a asp-area="" asp-controller="Employee" asp-action="UploadCsv" class="btn btn-outline-success">
+                Import CSV
+            </a>
+            <a asp-area="" asp-controller="Employee" asp-action="Create" class="btn btn-primary">
+                Add Employee
+            </a>
+        </div>
+    </div>
+
+    @if (!Model.Data.Items.Any())
+    {
+        <div class="alert alert-info">No employees found matching the current filters.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="sortable-header" data-column="name">
+                            Name
+                            @if (currentSort == "name")
+                            {
+                                <span class="ms-2">@(currentSortDesc ? "▼" : "▲")</span>
+                            }
+                            else
+                            {
+                                <span class="ms-2 text-muted">⇅</span>
+                            }
+                        </th>
+                        <th class="sortable-header" data-column="birthday">
+                            Birth Day
+                            @if (currentSort == "birthday")
+                            {
+                                <span class="ms-2">@(currentSortDesc ? "▼" : "▲")</span>
+                            }
+                            else
+                            {
+                                <span class="ms-2 text-muted">⇅</span>
+                            }
+                        </th>
+                        <th class="sortable-header" data-column="ismarried">
+                            Is Married
+                            @if (currentSort == "ismarried")
+                            {
+                                <span class="ms-2">@(currentSortDesc ? "▼" : "▲")</span>
+                            }
+                            else
+                            {
+                                <span class="ms-2 text-muted">⇅</span>
+                            }
+                        </th>
+                        <th class="sortable-header" data-column="phone">
+                            Phone
+                            @if (currentSort == "phone")
+                            {
+                                <span class="ms-2">@(currentSortDesc ? "▼" : "▲")</span>
+                            }
+                            else
+                            {
+                                <span class="ms-2 text-muted">⇅</span>
+                            }
+                        </th>
+                        <th class="sortable-header" data-column="salary">
+                            Salary
+                            @if (currentSort == "salary")
+                            {
+                                <span class="ms-2">@(currentSortDesc ? "▼" : "▲")</span>
+                            }
+                            else
+                            {
+                                <span class="ms-2 text-muted">⇅</span>
+                            }
+                        </th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var employee in Model.Data.Items)
+                    {
+                        <tr data-id="@employee.Id"
+                            data-name="@employee.Name"
+                            data-birthday="@(employee.BirthDay?.ToString("yyyy-MM-dd"))"
+                            data-birthday-display="@(employee.BirthDay?.ToString("dd/MM/yyyy"))"
+                            data-ismarried="@(employee.IsMarried.HasValue ? employee.IsMarried.Value.ToString().ToLower() : "")"
+                            data-ismarried-display="@(employee.IsMarried == true ? "Yes" : employee.IsMarried == false ? "No" : "-")"
+                            data-phone="@(employee.Phone ?? "")"
+                            data-salary="@employee.Salary.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                            data-salary-display="@employee.Salary.ToString("C")">
+                            <td>@employee.Name</td>
+                            <td>@employee.BirthDay?.ToString("dd/MM/yyyy")</td>
+                            <td>@(employee.IsMarried == true ? "Yes" : employee.IsMarried == false ? "No" : "-")</td>
+                            <td>@employee.Phone</td>
+                            <td>@employee.Salary.ToString("C")</td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-warning"
+                                        onclick="enterEditMode(this.closest('tr'))">Edit</button>
+                                <form asp-area="" asp-controller="Employee"
+                                      asp-action="Delete"
+                                      asp-route-id="@employee.Id"
+                                      method="post" style="display:inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger"
+                                            onclick="return confirm('Are you sure?')">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <nav aria-label="Page navigation" class="mt-4 d-flex justify-content-center">
+            <ul class="pagination">
+                @if (Model.Data.HasPreviousPage)
+                {
+                    <li class="page-item">
+                        <a class="page-link" asp-controller="Employee" asp-action="GetAllEmployees"
+                           asp-route-pageNumber="1"
+                           asp-route-pageSize="@Model.Data.PageSize"
+                           asp-route-sortBy="@currentSort"
+                           asp-route-sortDescending="@(hasSort ? currentSortDesc.ToString().ToLower() : null)"
+                           asp-route-searchQuery="@searchQuery"
+                           asp-route-birthDayFrom="@birthDayFrom"
+                           asp-route-birthDayTo="@birthDayTo"
+                           asp-route-isMarriedFilter="@isMarriedFilter"
+                           asp-route-minSalary="@minSalary"
+                           asp-route-maxSalary="@maxSalary">First</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" asp-controller="Employee" asp-action="GetAllEmployees"
+                           asp-route-pageNumber="@(Model.Data.PageNumber - 1)"
+                           asp-route-pageSize="@Model.Data.PageSize"
+                           asp-route-sortBy="@currentSort"
+                           asp-route-sortDescending="@(hasSort ? currentSortDesc.ToString().ToLower() : null)"
+                           asp-route-searchQuery="@searchQuery"
+                           asp-route-birthDayFrom="@birthDayFrom"
+                           asp-route-birthDayTo="@birthDayTo"
+                           asp-route-isMarriedFilter="@isMarriedFilter"
+                           asp-route-minSalary="@minSalary"
+                           asp-route-maxSalary="@maxSalary">Previous</a>
+                    </li>
+                }
+
+                @for (int i = 1; i <= Model.Data.TotalPages && i <= 5; i++)
+                {
+                    <li class="page-item @(i == Model.Data.PageNumber ? "active" : "")">
+                        <a class="page-link" asp-controller="Employee" asp-action="GetAllEmployees"
+                           asp-route-pageNumber="@i"
+                           asp-route-pageSize="@Model.Data.PageSize"
+                           asp-route-sortBy="@currentSort"
+                           asp-route-sortDescending="@(hasSort ? currentSortDesc.ToString().ToLower() : null)"
+                           asp-route-searchQuery="@searchQuery"
+                           asp-route-birthDayFrom="@birthDayFrom"
+                           asp-route-birthDayTo="@birthDayTo"
+                           asp-route-isMarriedFilter="@isMarriedFilter"
+                           asp-route-minSalary="@minSalary"
+                           asp-route-maxSalary="@maxSalary">@i</a>
+                    </li>
+                }
+
+                @if (Model.Data.HasNextPage)
+                {
+                    <li class="page-item">
+                        <a class="page-link" asp-controller="Employee" asp-action="GetAllEmployees"
+                           asp-route-pageNumber="@(Model.Data.PageNumber + 1)"
+                           asp-route-pageSize="@Model.Data.PageSize"
+                           asp-route-sortBy="@currentSort"
+                           asp-route-sortDescending="@(hasSort ? currentSortDesc.ToString().ToLower() : null)"
+                           asp-route-searchQuery="@searchQuery"
+                           asp-route-birthDayFrom="@birthDayFrom"
+                           asp-route-birthDayTo="@birthDayTo"
+                           asp-route-isMarriedFilter="@isMarriedFilter"
+                           asp-route-minSalary="@minSalary"
+                           asp-route-maxSalary="@maxSalary">Next</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" asp-controller="Employee" asp-action="GetAllEmployees"
+                           asp-route-pageNumber="@Model.Data.TotalPages"
+                           asp-route-pageSize="@Model.Data.PageSize"
+                           asp-route-sortBy="@currentSort"
+                           asp-route-sortDescending="@(hasSort ? currentSortDesc.ToString().ToLower() : null)"
+                           asp-route-searchQuery="@searchQuery"
+                           asp-route-birthDayFrom="@birthDayFrom"
+                           asp-route-birthDayTo="@birthDayTo"
+                           asp-route-isMarriedFilter="@isMarriedFilter"
+                           asp-route-minSalary="@minSalary"
+                           asp-route-maxSalary="@maxSalary">Last</a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    }
+</div>
+
+<style>
+    .sortable-header {
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .sortable-header:hover {
+        background-color: #495057 !important;
+        transition: background-color 0.2s ease;
+    }
+</style>
+
+<script>
+    // ── Sortable column headers ───────────────────────────────────────────────
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const sortableHeaders = document.querySelectorAll('.sortable-header');
+
+        sortableHeaders.forEach(header => {
+            header.addEventListener('click', function () {
+                const column          = this.getAttribute('data-column');
+                const currentSort     = '@currentSort';
+                const currentSortDesc = '@currentSortDesc' === 'True';
+
+                let newSort     = column;
+                let newSortDesc = false;
+
+                if (currentSort === column) {
+                    if (!currentSortDesc) {
+                        newSortDesc = true;
+                    } else {
+                        newSort = '';
+                    }
+                }
+
+                const url = new URL(window.location.href);
+                url.searchParams.set('pageNumber', '1');
+                url.searchParams.set('pageSize', '@Model.Data.PageSize');
+
+                if (newSort) {
+                    url.searchParams.set('sortBy', newSort);
+                    url.searchParams.set('sortDescending', newSortDesc);
+                } else {
+                    url.searchParams.delete('sortBy');
+                    url.searchParams.delete('sortDescending');
+                }
+
+                window.location.href = url.toString();
+            });
+        });
+    });
+
+    // ── Inline Edit ───────────────────────────────────────────────────────────
+
+    const inlineUpdateUrl = '@Url.Action("InlineUpdate", "Employee")';
+
+    function escHtml(str) {
+        const d = document.createElement('div');
+        d.textContent = str ?? '';
+        return d.innerHTML;
+    }
+
+    function restoreDisplayMode(row) {
+        const tds = row.querySelectorAll('td');
+        tds[0].textContent = row.dataset.name             ?? '';
+        tds[1].textContent = row.dataset.birthdayDisplay  ?? '';
+        tds[2].textContent = row.dataset.ismarriedDisplay ?? '';
+        tds[3].textContent = row.dataset.phone            ?? '';
+        tds[4].textContent = row.dataset.salaryDisplay    ?? '';
+        tds[5].innerHTML   = row._savedActionsHtml;
+        row.classList.remove('table-warning');
+        row._savedActionsHtml = null;
+    }
+
+    window.enterEditMode = function (row) {
+        if (row._savedActionsHtml) return;
+
+        const tds = row.querySelectorAll('td');
+        row._savedActionsHtml = tds[5].innerHTML;
+
+        tds[0].innerHTML = `<input type="text"   class="form-control form-control-sm" data-edit="name"     value="${escHtml(row.dataset.name ?? '')}">`;
+        tds[1].innerHTML = `<input type="date"   class="form-control form-control-sm" data-edit="birthday" value="${row.dataset.birthday ?? ''}">`;
+        tds[2].innerHTML = `
+            <select class="form-select form-select-sm" data-edit="ismarried">
+                <option value=""     ${(row.dataset.ismarried ?? '') === ''      ? 'selected' : ''}>-</option>
+                <option value="true"  ${row.dataset.ismarried === 'true'  ? 'selected' : ''}>Yes</option>
+                <option value="false" ${row.dataset.ismarried === 'false' ? 'selected' : ''}>No</option>
+            </select>`;
+        tds[3].innerHTML = `<input type="text"   class="form-control form-control-sm" data-edit="phone"    value="${escHtml(row.dataset.phone ?? '')}">`;
+        tds[4].innerHTML = `<input type="number" class="form-control form-control-sm" data-edit="salary"   value="${row.dataset.salary ?? ''}" step="0.01" min="0">`;
+        tds[5].innerHTML = `
+            <div class="d-flex gap-1">
+                <button type="button" class="btn btn-sm btn-success"   onclick="saveRow(this.closest('tr'))">Save</button>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="cancelEdit(this.closest('tr'))">Cancel</button>
+            </div>
+            <div class="text-danger small mt-1" data-edit="error"></div>`;
+
+        row.classList.add('table-warning');
+        row.querySelector('[data-edit="name"]').focus();
+    };
+
+    window.cancelEdit = function (row) {
+        restoreDisplayMode(row);
+    };
+
+    window.saveRow = function (row) {
+        const nameVal    = row.querySelector('[data-edit="name"]').value.trim();
+        const bdayVal    = row.querySelector('[data-edit="birthday"]').value;
+        const marriedVal = row.querySelector('[data-edit="ismarried"]').value;
+        const phoneVal   = row.querySelector('[data-edit="phone"]').value.trim();
+        const salaryStr  = row.querySelector('[data-edit="salary"]').value;
+        const errorDiv   = row.querySelector('[data-edit="error"]');
+        const saveBtn    = row.querySelector('.btn-success');
+        const cancelBtn  = row.querySelector('.btn-secondary');
+
+        errorDiv.textContent = '';
+        if (!nameVal)                                    { errorDiv.textContent = 'Name is required.';                    return; }
+        if (nameVal.length < 2 || nameVal.length > 100) { errorDiv.textContent = 'Name must be 2–100 characters.';       return; }
+        const salaryNum = parseFloat(salaryStr);
+        if (salaryStr === '' || isNaN(salaryNum) || salaryNum < 0) {
+            errorDiv.textContent = 'Salary must be a valid positive number.'; return;
+        }
+
+        saveBtn.disabled = cancelBtn.disabled = true;
+        saveBtn.textContent = 'Saving…';
+
+        fetch(inlineUpdateUrl, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id:        row.dataset.id,
+                name:      nameVal,
+                birthDay:  bdayVal  || null,
+                isMarried: marriedVal === '' ? null : (marriedVal === 'true'),
+                phone:     phoneVal || null,
+                salary:    salaryNum
+            })
+        })
+        .then(async res => {
+            const data = await res.json();
+            if (res.ok && data.success) {
+                row.dataset.name             = nameVal;
+                row.dataset.birthday         = bdayVal;
+                row.dataset.birthdayDisplay  = data.formatted.birthDay;
+                row.dataset.ismarried        = marriedVal;
+                row.dataset.ismarriedDisplay = marriedVal === 'true' ? 'Yes' : marriedVal === 'false' ? 'No' : '-';
+                row.dataset.phone            = phoneVal;
+                row.dataset.salary           = salaryNum.toString();
+                row.dataset.salaryDisplay    = data.formatted.salary;
+                restoreDisplayMode(row);
+            } else {
+                const msg = data.errors ? data.errors.join('; ') : 'Failed to save. Please try again.';
+                errorDiv.textContent = msg;
+                saveBtn.disabled = cancelBtn.disabled = false;
+                saveBtn.textContent = 'Save';
+            }
+        })
+        .catch(() => {
+            errorDiv.textContent = 'Network error. Please try again.';
+            saveBtn.disabled = cancelBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+        });
+    };
+</script>

@@ -1,5 +1,10 @@
+using ContactManagerApplication.Data;
 using ContactManagerApplication.Migrations;
+using ContactManagerApplication.Repositories;
+using ContactManagerApplication.Services;
+using ContactManagerApplication.Mappings;
 using FluentMigrator.Runner;
+using Dapper;
 
 namespace ContactManagerApplication
 {
@@ -11,6 +16,21 @@ namespace ContactManagerApplication
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
+
+            // Register Dapper type handlers
+            SqlMapper.AddTypeHandler(new DateOnlyTypeHandler());
+
+            //Register Dapper DbContext as Singleton
+            builder.Services.AddSingleton<ContactManagerDbContext>();
+
+            //Register Repository as Scoped
+            builder.Services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+
+            //Register CSV import service as Scoped
+            builder.Services.AddScoped<ICsvImportService, CsvImportService>();
+
+            //Add AutoMapper
+            builder.Services.AddAutoMapper(cfg => cfg.AddMaps(typeof(EmployeeProfile).Assembly));
 
             //Add FluentMigrator to services
             var connectionString = builder.Configuration.GetConnectionString("ContactManagerDbConnectionString");
@@ -40,7 +60,7 @@ namespace ContactManagerApplication
             app.MapStaticAssets();
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}")
+                pattern: "{controller=Employee}/{action=GetAllEmployees}/{id?}")
                 .WithStaticAssets();
             
             //Migration executing

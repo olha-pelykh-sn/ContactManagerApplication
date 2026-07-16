@@ -1,0 +1,223 @@
+﻿@using ContactManagerApplication.Models.Domain
+@using ContactManagerApplication.Models
+@using ContactManagerApplication.Models.ViewModel
+@model PaginatedResult<Employee>
+@{
+    var currentSort      = ViewData["CurrentSort"]?.ToString();
+    var currentSortDesc  = ViewData["CurrentSortDesc"]?.ToString() == "True";
+    var searchQuery      = ViewData["CurrentSearchQuery"]?.ToString();
+    var birthDayFrom     = ViewData["BirthDayFrom"]?.ToString();
+    var birthDayTo       = ViewData["BirthDayTo"]?.ToString();
+    var isMarriedFilter  = ViewData["IsMarriedFilter"]?.ToString();
+    var minSalary        = ViewData["MinSalary"]?.ToString();
+    var maxSalary        = ViewData["MaxSalary"]?.ToString();
+
+    var hasActiveFilters = !string.IsNullOrEmpty(searchQuery)
+                        || !string.IsNullOrEmpty(birthDayFrom)
+                        || !string.IsNullOrEmpty(birthDayTo)
+                        || !string.IsNullOrEmpty(isMarriedFilter)
+                        || !string.IsNullOrEmpty(minSalary)
+                        || !string.IsNullOrEmpty(maxSalary);
+
+    var hasSort = !string.IsNullOrEmpty(currentSort);
+}
+
+<form method="get" asp-controller="Employee" asp-action="GetAllEmployees" id="filterForm">
+
+    @* Preserve sort state across filter submissions *@
+    @if (hasSort)
+    {
+        <input type="hidden" name="sortBy" value="@currentSort" />
+        <input type="hidden" name="sortDescending" value="@currentSortDesc.ToString().ToLower()" />
+    }
+
+    <div class="card mb-3 shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center py-2">
+            <div class="d-flex align-items-center gap-2">
+                <strong>Search &amp; Filters</strong>
+                @if (hasActiveFilters)
+                {
+                    <span class="badge bg-warning text-dark">Filters active</span>
+                }
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-secondary"
+                    data-bs-toggle="collapse" data-bs-target="#filterBody" aria-expanded="true">
+                Toggle
+            </button>
+        </div>
+
+        <div class="collapse show" id="filterBody">
+            <div class="card-body pb-2">
+
+                <div class="row g-3 align-items-end">
+
+                    <div class="col-md-4">
+                        <label for="searchQuery" class="form-label small fw-semibold text-muted mb-1">Search</label>
+                        <input type="text" name="searchQuery" id="searchQuery"
+                               class="form-control" placeholder="Name or phone"
+                               value="@searchQuery" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="isMarriedFilter" class="form-label small fw-semibold text-muted mb-1">Marital Status</label>
+                        <select name="isMarriedFilter" id="isMarriedFilter" class="form-select">
+                            @if (isMarriedFilter == "true")
+                            {
+                                <option value="">All</option>
+                                <option value="true" selected>Married</option>
+                                <option value="false">Not Married</option>
+                            }
+                            else if (isMarriedFilter == "false")
+                            {
+                                <option value="">All</option>
+                                <option value="true">Married</option>
+                                <option value="false" selected>Not Married</option>
+                            }
+                            else
+                            {
+                                <option value="" selected>All</option>
+                                <option value="true">Married</option>
+                                <option value="false">Not Married</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-5 d-none d-md-block"></div>
+
+                    <div class="col-md-5">
+                        <label class="form-label small fw-semibold text-muted mb-1">Date of Birth</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="flex-fill">
+                                <input type="date" name="birthDayFrom" id="birthDayFrom"
+                                       class="form-control" value="@birthDayFrom"
+                                       title="From (inclusive)" placeholder="From" />
+                            </div>
+                            <span class="text-muted flex-shrink-0">to</span>
+                            <div class="flex-fill">
+                                <input type="date" name="birthDayTo" id="birthDayTo"
+                                       class="form-control" value="@birthDayTo"
+                                       title="To (inclusive)" placeholder="To" />
+                            </div>
+                            @if (!string.IsNullOrEmpty(birthDayFrom) || !string.IsNullOrEmpty(birthDayTo))
+                            {
+                                <button type="button" class="btn btn-outline-secondary btn-sm flex-shrink-0"
+                                        title="Clear date of birth filter"
+                                        onclick="clearFields('birthDayFrom', 'birthDayTo')">&#x2715;</button>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="col-md-5">
+                        <label class="form-label small fw-semibold text-muted mb-1">Salary Range</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="flex-fill">
+                                <input type="number" name="minSalary" id="minSalary"
+                                       class="form-control" placeholder="Min"
+                                       value="@minSalary" step="0.01" min="0" />
+                            </div>
+                            <span class="text-muted flex-shrink-0">&ndash;</span>
+                            <div class="flex-fill">
+                                <input type="number" name="maxSalary" id="maxSalary"
+                                       class="form-control" placeholder="Max"
+                                       value="@maxSalary" step="0.01" min="0" />
+                            </div>
+                            @if (!string.IsNullOrEmpty(minSalary) || !string.IsNullOrEmpty(maxSalary))
+                            {
+                                <button type="button" class="btn btn-outline-secondary btn-sm flex-shrink-0"
+                                        title="Clear salary filter"
+                                        onclick="clearFields('minSalary', 'maxSalary')">&#x2715;</button>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="col-md-2 d-flex gap-2">
+                        <button type="submit" class="btn btn-warning flex-fill">Apply</button>
+                        @if (hasActiveFilters || hasSort)
+                        {
+                            <a asp-controller="Employee" asp-action="GetAllEmployees"
+                               class="btn btn-secondary flex-fill">Reset</a>
+                        }
+                    </div>
+
+                </div>
+
+                @if (hasActiveFilters)
+                {
+                    <div class="d-flex flex-wrap gap-2 align-items-center mt-3 pt-2 border-top">
+                        <small class="text-muted me-1">Active:</small>
+
+                        @if (!string.IsNullOrEmpty(searchQuery))
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-warning"
+                                    title="Remove search filter"
+                                    onclick="clearFields('searchQuery')">
+                                Search: &ldquo;@searchQuery&rdquo; &#x2715;
+                            </button>
+                        }
+
+                        @if (!string.IsNullOrEmpty(birthDayFrom) || !string.IsNullOrEmpty(birthDayTo))
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-warning"
+                                    title="Remove date of birth filter"
+                                    onclick="clearFields('birthDayFrom', 'birthDayTo')">
+                                DOB: @(string.IsNullOrEmpty(birthDayFrom) ? "any" : birthDayFrom)
+                                &ndash; @(string.IsNullOrEmpty(birthDayTo) ? "any" : birthDayTo) &#x2715;
+                            </button>
+                        }
+
+                        @if (!string.IsNullOrEmpty(isMarriedFilter))
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-warning"
+                                    title="Remove marital status filter"
+                                    onclick="resetSelect('isMarriedFilter')">
+                                Married: @(isMarriedFilter == "true" ? "Yes" : "No") &#x2715;
+                            </button>
+                        }
+
+                        @if (!string.IsNullOrEmpty(minSalary) || !string.IsNullOrEmpty(maxSalary))
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-warning"
+                                    title="Remove salary filter"
+                                    onclick="clearFields('minSalary', 'maxSalary')">
+                                Salary: @(string.IsNullOrEmpty(minSalary) ? "0" : minSalary)
+                                &ndash; @(string.IsNullOrEmpty(maxSalary) ? "&#x221E;" : maxSalary) &#x2715;
+                            </button>
+                        }
+
+                    </div>
+                }
+
+            </div>
+        </div>
+    </div>
+
+</form>
+
+@await Component.InvokeAsync("EmployeeList", new EmployeeListViewModel
+{
+    Data            = Model,
+    CurrentSort     = currentSort,
+    CurrentSortDesc = currentSortDesc,
+    SearchQuery     = searchQuery,
+    BirthDayFrom    = birthDayFrom,
+    BirthDayTo      = birthDayTo,
+    IsMarriedFilter = isMarriedFilter,
+    MinSalary       = minSalary,
+    MaxSalary       = maxSalary
+})
+
+<script>
+    function clearFields(...ids) {
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        document.getElementById('filterForm').submit();
+    }
+
+    function resetSelect(id) {
+        const el = document.getElementById(id);
+        if (el) el.selectedIndex = 0;
+        document.getElementById('filterForm').submit();
+    }
+</script>
